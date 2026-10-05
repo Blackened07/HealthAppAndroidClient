@@ -5,9 +5,7 @@ plugins {
 
 android {
     namespace = "com.blackened.healthapp"
-    compileSdk {
-        version = release(37)
-    }
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.blackened.healthapp"
@@ -21,9 +19,7 @@ android {
 
     buildTypes {
         release {
-            optimization {
-                enable = false
-            }
+            isMinifyEnabled = false
         }
     }
     compileOptions {
@@ -52,4 +48,11 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
+    // Сеть и навигация без вложенных точек и дефисов
+    implementation(libs.navigation)
+    implementation(libs.retrofit)
+    implementation(libs.serialization)
+    implementation(libs.okhttp)
+    implementation(libs.logging)
+    implementation(libs.json)
 }
