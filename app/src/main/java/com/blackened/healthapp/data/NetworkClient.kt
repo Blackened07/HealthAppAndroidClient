@@ -12,6 +12,14 @@ object NetworkClient {
 
     private const val BASE_URL = "https://blackenedhealthapp.ru/api/v1/"
 
+    val authApi: AuthApiService by lazy {
+        retrofit.create(AuthApiService::class.java)
+    }
+
+    val healthApi: HealthApiService by lazy {
+        retrofit.create(HealthApiService::class.java)
+    }
+
     private val jsonParser = Json {
         ignoreUnknownKeys = true
         coerceInputValues = true
@@ -27,8 +35,8 @@ object NetworkClient {
             .addInterceptor(loggingInterceptor)
             .addInterceptor { chain ->
                 val originalRequest = chain.request()
-                val token = TokenManager.token
-                val newRequest = if (token != null) {
+                val token = SessionManager.token
+                val newRequest = if (!token.isNullOrBlank()) {
                     originalRequest.newBuilder()
                         .header("Authorization", "Bearer $token")
                         .build()
@@ -51,7 +59,5 @@ object NetworkClient {
             .build()
     }
 
-    val authApi: AuthApiService by lazy {
-        retrofit.create(AuthApiService::class.java)
-    }
+
 }

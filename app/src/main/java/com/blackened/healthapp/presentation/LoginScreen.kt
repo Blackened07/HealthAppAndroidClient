@@ -18,8 +18,8 @@ import com.blackened.healthapp.R
 const val LOGO = "Логотип приложения"
 const val APP_DESCRIPTION = "Приложение для контроля здоровья"
 const val ROLE = "Роль"
-const val REGISTRATION_BTN = "Войти"
-const val LOGIN_BTN = "Зарегистрироваться"
+const val REGISTRATION_BTN = "Зарегистрироваться"
+const val LOGIN_BTN = "Войти"
 const val REGISTRATION_TOGGLE = "Регистрация"
 const val LOGIN_TOGGLE = "Вход"
 const val BOTTOM_TEXT = "Войдите или создайте аккаунт, чтобы начать"
@@ -28,7 +28,8 @@ const val BOTTOM_TEXT = "Войдите или создайте аккаунт, 
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
-    onNavigateToVerification: (email: String) -> Unit = {}
+    onNavigateToVerification: (email: String) -> Unit = {},
+    onLoginSuccess: () -> Unit = {}
 ) {
 
     Column(
@@ -41,7 +42,7 @@ fun LoginScreen(
 
         HeaderBlock()
 
-        CardBlock(viewModel, onNavigateToVerification)
+        CardBlock(viewModel, onNavigateToVerification, onLoginSuccess)
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -55,7 +56,11 @@ fun LoginScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CardBlock(viewModel: LoginViewModel, onNavigateToVerification: (String) -> Unit) {
+fun CardBlock(
+    viewModel: LoginViewModel,
+    onNavigateToVerification: (String) -> Unit,
+    onLoginSuccess: () -> Unit
+) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -101,12 +106,16 @@ fun CardBlock(viewModel: LoginViewModel, onNavigateToVerification: (String) -> U
 
             Spacer(Modifier.height(16.dp))
 
-            ModeToggleButtons(viewModel = viewModel, onNavigateToVerification = onNavigateToVerification)
+            ModeToggleButtons(viewModel = viewModel)
 
             Spacer(Modifier.height(16.dp))
 
             Button(
-                onClick = { viewModel.onActionClick(onRegistrationSuccess = onNavigateToVerification) },
+                onClick = {
+                    viewModel.onActionClick(
+                    onNeedVerification = onNavigateToVerification,
+                    onLoginSuccess = onLoginSuccess
+                ) },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = if (viewModel.isRegisterMode) REGISTRATION_BTN else LOGIN_BTN)
@@ -123,13 +132,14 @@ fun CardBlock(viewModel: LoginViewModel, onNavigateToVerification: (String) -> U
 }
 
 @Composable
-fun ModeToggleButtons(viewModel: LoginViewModel, onNavigateToVerification: (String) -> Unit) {
+fun ModeToggleButtons(viewModel: LoginViewModel) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
 
-        OutlinedButton(onClick = { viewModel.switchToLogin() },
+        OutlinedButton(
+            onClick = { viewModel.switchToLogin() },
             modifier = Modifier.weight(1f),
             colors = ButtonDefaults.outlinedButtonColors(
                 containerColor = if (!viewModel.isRegisterMode)
@@ -141,7 +151,7 @@ fun ModeToggleButtons(viewModel: LoginViewModel, onNavigateToVerification: (Stri
         }
 
         OutlinedButton(
-            onClick = { viewModel.onActionClick(onNavigateToVerification) },
+            onClick = { viewModel.switchToRegister() },
             modifier = Modifier.weight(1f),
             colors = ButtonDefaults.outlinedButtonColors(
                 containerColor = if (viewModel.isRegisterMode)

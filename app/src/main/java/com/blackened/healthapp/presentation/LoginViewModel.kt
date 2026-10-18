@@ -1,13 +1,21 @@
 package com.blackened.healthapp.presentation
 
+import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+
+import com.blackened.healthapp.data.ErrorResponseDTO
 import com.blackened.healthapp.data.NetworkClient
-import com.blackened.healthapp.data.RegisterAccountRequest
+import com.blackened.healthapp.data.RegisterAccountRequestDTO
+import com.blackened.healthapp.data.LoginRequestDTO
+import com.blackened.healthapp.data.SessionManager
+import com.blackened.healthapp.data.TokenManager
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import retrofit2.HttpException
 
 class LoginViewModel : ViewModel() {
 
@@ -59,7 +67,10 @@ class LoginViewModel : ViewModel() {
         isRegisterMode = true
     }
 
-    fun onActionClick(onRegistrationSuccess: (String) -> Unit) {
+    fun onActionClick(
+        onNeedVerification: (String) -> Unit,
+        onLoginSuccess: () -> Unit)
+    {
         if (email.isBlank() || password.isBlank()) return
 
         isLoading = true
@@ -69,7 +80,7 @@ class LoginViewModel : ViewModel() {
             try {
                 if (isRegisterMode) {
                    val requestData =
-                       RegisterAccountRequest(
+                       RegisterAccountRequestDTO(
                            email = email,
                            password = password,
                            firstName = firstName,
@@ -82,12 +93,46 @@ class LoginViewModel : ViewModel() {
                     password = ""
                     firstName = ""
 
-                    onRegistrationSuccess(response.email)
+                    onNeedVerification(response.email)
                 } else {
-                    // TODO: Реализовать вход
+
+                    val loginData = LoginRequestDTO(
+                        email = email,
+                        password = password
+                    )
+
+                    val authResponse = NetworkClient.authApi.login(loginData)
+
+                    SessionManager.token = authResponse.message
+                    SessionManager.userEmail = email
+                    SessionManager.userId = authResponse.userId
+                    SessionManager.userName = authResponse.firstName
+
+                    email = ""
+                    password = ""
+
+                   /* TokenManager.token = response.message*/
+
+                    onLoginSuccess()
                 }
-            } catch (e: Exception) {
-                /*onRegistrationFailure(e.message)*/
+            } catch (e: HttpException) {
+
+                val errorBody = e.response()?.errorBody()?.string()
+
+                if (!errorBody.isNullOrBlank()) {
+
+                    try {
+                        val errDto = Json.decodeFromString<ErrorResponseDTO>(errorBody ?: "")
+
+                        if (errDto.status == 403 && errDto.message.contains("NEED_VERIFICATION")) {
+                            onNeedVerification(email)
+                        } else {
+                            /*Toast.makeText(this errDto.message, Toast.LENGTH_LONG).show()*/
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
             } finally {
                 isLoading = false
             }

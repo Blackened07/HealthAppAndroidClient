@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.4.21"
 }
 
 android {
@@ -55,4 +56,5 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.logging)
     implementation(libs.json)
+    implementation("androidx.compose.material:material-icons-extended")
 }
