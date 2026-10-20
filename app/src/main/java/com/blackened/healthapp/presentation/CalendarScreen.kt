@@ -6,9 +6,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -40,19 +37,20 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-@Preview(showBackground = true)
+/*@Preview(showBackground = true)
 @Composable
 fun CalendarScreenPreview() {
     CalendarScreen(
         onNavigateToFamily = {},
         onLogout = {}
     )
-}
+}*/
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarScreen(
     onNavigateToFamily: () -> Unit,
+    onNavigateToReport: () -> Unit,
     onLogout: () -> Unit,
     viewModel: CalendarViewModel = viewModel()
 ) {
@@ -67,7 +65,7 @@ fun CalendarScreen(
             ModalDrawerSheet {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text("Меню приложения", modifier = Modifier.padding(16.dp), fontSize = 20.sp)
-                Divider()
+                HorizontalDivider()
 
                 NavigationDrawerItem(
                     label = { Text("Семья") },
@@ -108,7 +106,7 @@ fun CalendarScreen(
                     },
                     actions = {
 
-                        TextButton(onClick = { /* Логика отчета */ }) {
+                        TextButton(onClick = onNavigateToReport) {
                             Text("Отчет")
                         }
                     }
@@ -388,7 +386,7 @@ fun MedicalRecordItem(
                 color = MaterialTheme.colorScheme.primary
             )
 
-            Divider(
+            HorizontalDivider(
                 modifier = Modifier.padding(vertical = 12.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
             )

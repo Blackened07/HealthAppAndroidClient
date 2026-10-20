@@ -57,4 +57,5 @@ dependencies {
     implementation(libs.logging)
     implementation(libs.json)
     implementation("androidx.compose.material:material-icons-extended")
+    implementation("org.dhatim:fastexcel:0.18.4")
 }

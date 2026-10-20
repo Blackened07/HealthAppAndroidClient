@@ -69,7 +69,7 @@ class AddRecordViewModel : ViewModel() {
 
     fun saveRecord(onRecordAdded: () -> Unit) {
         val v1 = value1Text.toDoubleOrNull() ?: return
-        val v2 = if (selectedType != MetricType.BLOOD_PRESSURE) 0.0 else value2Text.toDoubleOrNull()
+        val v2 = if (selectedType != MetricType.BLOOD_PRESSURE) null else value2Text.toDoubleOrNull()
 
         val currentTimestamp = System.currentTimeMillis()
         val currentOffset =

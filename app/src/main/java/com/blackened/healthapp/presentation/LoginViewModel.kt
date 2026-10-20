@@ -122,7 +122,7 @@ class LoginViewModel : ViewModel() {
                 if (!errorBody.isNullOrBlank()) {
 
                     try {
-                        val errDto = Json.decodeFromString<ErrorResponseDTO>(errorBody ?: "")
+                        val errDto = Json.decodeFromString<ErrorResponseDTO>(errorBody)
 
                         if (errDto.status == 403 && errDto.message.contains("NEED_VERIFICATION")) {
                             onNeedVerification(email)
