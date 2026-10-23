@@ -4,14 +4,14 @@ import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 import androidx.core.content.FileProvider
-import com.blackened.healthapp.presentation.formatServerDate
+import com.blackened.healthapp.data.network.HealthRecordResponseDTO
+import com.blackened.healthapp.presentation.home.formatServerDate
 import org.dhatim.fastexcel.Workbook
 import java.io.File
 import java.io.FileOutputStream
 import java.time.LocalDateTime
 
 object ExcelReport {
-
 
     fun createReport(context: Context, reportList: List<HealthRecordResponseDTO>, userName: String): File? {
         if (reportList.isEmpty()) return null
@@ -40,7 +40,7 @@ object ExcelReport {
                     for (i in reportList.indices) {
                         element = reportList[i]
 
-                        sheet.value(i + 2, 0, (i + 1).toLong())
+                        sheet.value(i + 2, 0, (i + 1).toString() + ")")
                         sheet.value(i + 2, 1, formatServerDate(element.timestamp))
 
                         val displayValue = if (element.value2 != null) {

@@ -1,5 +1,6 @@
-package com.blackened.healthapp.presentation
+package com.blackened.healthapp.presentation.verification
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -8,8 +9,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -77,6 +80,16 @@ fun VerificationFormBlock(
     viewModel: VerificationViewModel,
     onSuccessRoute: () -> Unit
 ) {
+
+    val context = LocalContext.current
+
+    LaunchedEffect(viewModel.errorResponse) {
+        viewModel.errorResponse?.let { error ->
+            Toast.makeText(context, error.message, Toast.LENGTH_LONG).show()
+            viewModel.clearError()
+        }
+    }
+
     OutlinedTextField(
         value = viewModel.code,
         onValueChange = { input ->

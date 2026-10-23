@@ -1,5 +1,6 @@
-package com.blackened.healthapp.presentation
+package com.blackened.healthapp.presentation.login
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -8,11 +9,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blackened.healthapp.R
 
 const val LOGO = "Логотип приложения"
@@ -27,10 +30,19 @@ const val BOTTOM_TEXT = "Войдите или создайте аккаунт, 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    viewModel: LoginViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
+    viewModel: LoginViewModel = viewModel(),
     onNavigateToVerification: (email: String) -> Unit = {},
     onLoginSuccess: () -> Unit = {}
 ) {
+
+    val context = LocalContext.current
+
+    LaunchedEffect(viewModel.errorResponse) {
+        viewModel.errorResponse?.let { error ->
+            Toast.makeText(context, error.message, Toast.LENGTH_LONG).show()
+            viewModel.clearError()
+        }
+    }
 
     Column(
         modifier = Modifier

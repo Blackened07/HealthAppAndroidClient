@@ -1,5 +1,6 @@
-package com.blackened.healthapp.presentation
+package com.blackened.healthapp.presentation.home
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,8 +16,10 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,14 +28,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.blackened.healthapp.data.SessionManager
+import com.blackened.healthapp.presentation.addRecord.AddRecordBottomSheet
+import com.blackened.healthapp.presentation.addRecord.AddRecordViewModel
+import com.blackened.healthapp.presentation.MetricType
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -59,6 +65,15 @@ fun CalendarScreen(
 
     var showBottomSheet by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
+
+    LaunchedEffect(viewModel.errorResponse) {
+        viewModel.errorResponse?.let { error ->
+            Toast.makeText(context, error.message, Toast.LENGTH_LONG).show()
+            viewModel.clearError()
+        }
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -74,7 +89,8 @@ fun CalendarScreen(
                         scope.launch { drawerState.close() }
                         onNavigateToFamily()
                     },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    icon = { Icon(imageVector = Icons.Default.People, contentDescription = "Семья") }
+                   /* modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)*/
                 )
 
                 NavigationDrawerItem(
@@ -84,6 +100,7 @@ fun CalendarScreen(
                         scope.launch { drawerState.close() }
                         onLogout()
                     },
+
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
             }
@@ -221,7 +238,7 @@ fun CalendarScreen(
             ) {
                 val addRecordViewModel: AddRecordViewModel = viewModel()
 
-                androidx.compose.runtime.LaunchedEffect(viewModel.editingRecordId) {
+                LaunchedEffect(viewModel.editingRecordId) {
                     val recordId = viewModel.editingRecordId
                     if (recordId != null) {
                         val recordToEdit = viewModel.recordsList.find { it.id == recordId }
@@ -319,7 +336,7 @@ fun CalendarGridBlock(
                             .size(40.dp)
                             .clip(CircleShape)
                             .background(
-                                color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else androidx.compose.ui.graphics.Color.Transparent
+                                color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
                             )
                             .clickable { onDayClick(dayNumber) }
                     ) {

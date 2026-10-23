@@ -49,7 +49,6 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
-    // Сеть и навигация без вложенных точек и дефисов
     implementation(libs.navigation)
     implementation(libs.retrofit)
     implementation(libs.serialization)

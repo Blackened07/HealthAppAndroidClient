@@ -1,11 +1,10 @@
-package com.blackened.healthapp.presentation
+package com.blackened.healthapp.presentation.report
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -24,16 +23,23 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalDensity
-import com.blackened.healthapp.data.HealthRecordResponseDTO
+import com.blackened.healthapp.data.network.HealthRecordResponseDTO
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import android.graphics.Paint
+import android.widget.Toast
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
+import com.blackened.healthapp.presentation.MetricType
+import com.blackened.healthapp.presentation.home.formatServerDate
+import java.time.Instant
+import java.time.ZoneId
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -46,6 +52,15 @@ fun ReportScreen(
 
     var showFromDatePicker by remember { mutableStateOf(false) }
     var showToDatePicker by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    LaunchedEffect(viewModel.errorResponse) {
+        viewModel.errorResponse?.let { error ->
+            Toast.makeText(context, error.message, Toast.LENGTH_LONG).show()
+            viewModel.clearError()
+        }
+    }
+
 
     Scaffold(
         topBar = {
@@ -259,8 +274,8 @@ fun ReportScreen(
                         val selectedMillis = datePickerState.selectedDateMillis
                         if (selectedMillis != null) {
 
-                            val localDate = java.time.Instant.ofEpochMilli(selectedMillis)
-                                .atZone(java.time.ZoneId.systemDefault())
+                            val localDate = Instant.ofEpochMilli(selectedMillis)
+                                .atZone(ZoneId.systemDefault())
                                 .toLocalDate()
 
                             viewModel.onDateFromChanged(localDate)
@@ -291,8 +306,8 @@ fun ReportScreen(
                     onClick = {
                         val selectedMillis = datePickerState.selectedDateMillis
                         if (selectedMillis != null) {
-                            val localDate = java.time.Instant.ofEpochMilli(selectedMillis)
-                                .atZone(java.time.ZoneId.systemDefault())
+                            val localDate = Instant.ofEpochMilli(selectedMillis)
+                                .atZone(ZoneId.systemDefault())
                                 .toLocalDate()
 
                             viewModel.onDateToChanged(localDate)
@@ -508,7 +523,7 @@ fun Color.toArgb(): Int = with(LocalDensity.current) {
     )
 }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Preview(showBackground = true)
 @Composable
 fun ReportScreenPreview() {
     ReportScreen(onNavigateBack = {})

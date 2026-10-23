@@ -1,4 +1,4 @@
-package com.blackened.healthapp.data
+package com.blackened.healthapp.data.network
 
 
 import kotlinx.serialization.Serializable
@@ -43,13 +43,7 @@ data class VerificationRequestDTO(
     val code: String
 )
 
-@Serializable
-data class ErrorResponseDTO(
-    val timestamp: String,
-    val status: Int,
-    val message: String,
-    val critical: Boolean
-)
+
 
 
 interface AuthApiService {

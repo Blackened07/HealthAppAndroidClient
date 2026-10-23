@@ -1,4 +1,4 @@
-package com.blackened.healthapp.presentation
+package com.blackened.healthapp.presentation.addRecord
 
 import android.icu.util.TimeZone
 import androidx.compose.runtime.getValue
@@ -6,12 +6,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.blackened.healthapp.data.HealthRecordRequestDTO
-import com.blackened.healthapp.data.NetworkClient
 import com.blackened.healthapp.data.SessionManager
+import com.blackened.healthapp.data.network.HealthRecordResponseDTO
+import com.blackened.healthapp.data.repository.HealthRepositoryImpl
+import com.blackened.healthapp.domain.model.AppNetworkException
+import com.blackened.healthapp.domain.model.ErrorResponseDTO
+import com.blackened.healthapp.domain.usecase.healthrecords.SaveRecordUseCase
+import com.blackened.healthapp.domain.usecase.healthrecords.UpdateRecordUseCase
+import com.blackened.healthapp.presentation.MetricType
 import kotlinx.coroutines.launch
 
-class AddRecordViewModel : ViewModel() {
+class AddRecordViewModel(
+    private val saveRecordUseCase: SaveRecordUseCase = SaveRecordUseCase(HealthRepositoryImpl()),
+    private val updateRecordUseCase: UpdateRecordUseCase = UpdateRecordUseCase(HealthRepositoryImpl())
+) : ViewModel() {
 
     val availableMetrics = MetricType.entries
 
@@ -29,6 +37,11 @@ class AddRecordViewModel : ViewModel() {
 
     var isLoading by mutableStateOf(false)
         private set
+
+    var errorResponse by mutableStateOf<ErrorResponseDTO?>(null)
+        private set
+
+    fun clearError() { errorResponse = null }
 
     fun onTypeChanged(newType: MetricType) {
         selectedType = newType
@@ -49,7 +62,7 @@ class AddRecordViewModel : ViewModel() {
     var editingRecordId by mutableStateOf<Long?>(null)
         private set
 
-    fun prepareForEdit(record: com.blackened.healthapp.data.HealthRecordResponseDTO) {
+    fun prepareForEdit(record: HealthRecordResponseDTO) {
         editingRecordId = record.id
         value1Text = record.value1.toString()
         value2Text = record.value2?.toString() ?: ""
@@ -65,11 +78,12 @@ class AddRecordViewModel : ViewModel() {
         value1Text = ""
         value2Text = ""
         noteText = ""
+        editingRecordId = null
     }
 
     fun saveRecord(onRecordAdded: () -> Unit) {
         val v1 = value1Text.toDoubleOrNull() ?: return
-        val v2 = if (selectedType != MetricType.BLOOD_PRESSURE) null else value2Text.toDoubleOrNull()
+        val v2 = if (selectedType != MetricType.BLOOD_PRESSURE) 0.0 else value2Text.toDoubleOrNull()
 
         val currentTimestamp = System.currentTimeMillis()
         val currentOffset =
@@ -78,34 +92,40 @@ class AddRecordViewModel : ViewModel() {
         isLoading = true
 
         viewModelScope.launch {
-            try {
-                val request = HealthRecordRequestDTO(
+            val recordId = editingRecordId
 
-                    type = selectedType.serverName,
-                    value1 = v1,
-                    value2 = v2,
-                    note = noteText.ifBlank { null },
-                    TIMESTAMP = currentTimestamp,
-                    OFFSET_ZONE = currentOffset
+            val result = if (recordId == null) {
+                saveRecordUseCase(
+                    SessionManager.userId,
+                    selectedType.serverName,
+                    v1, v2,
+                    noteText,
+                    currentTimestamp,
+                    currentOffset
                 )
+            } else {
+                updateRecordUseCase(
+                    recordId,
+                    selectedType.serverName,
+                    v1, v2,
+                    noteText,
+                    currentTimestamp,
+                    currentOffset
+                )
+            }
 
-                val currentEditId = editingRecordId
-
-                if (currentEditId != null) {
-                    NetworkClient.healthApi.updateRecord(currentEditId, request)
-                } else {
-                    NetworkClient.healthApi.createRecord(targetId = SessionManager.userId, request = request)
+            result.onSuccess {
+                clearForm()
+                onRecordAdded()
+            }.onFailure { e ->
+                clearForm()
+                if (e is AppNetworkException) {
+                    errorResponse = e.errorData
                 }
 
-                clearForm()
-                editingRecordId = null
-                onRecordAdded()
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                isLoading = false
             }
+            isLoading = false
+
         }
     }
 }

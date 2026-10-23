@@ -1,4 +1,4 @@
-package com.blackened.healthapp.data
+package com.blackened.healthapp.data.network
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -7,6 +7,7 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import okhttp3.ResponseBody
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -24,6 +25,7 @@ object LocalDateTimeSerializer : KSerializer<String> {
 
     override fun serialize(encoder: Encoder, value: String) = encoder.encodeString(value)
 }
+
 @Serializable
 data class HealthRecordResponseDTO(
     val id: Long,
@@ -67,7 +69,7 @@ interface HealthApiService{
     @DELETE("health-records/{recordId}")
     suspend fun deleteRecord(
         @Path("recordId") recordId: Long
-    ): okhttp3.ResponseBody
+    ): ResponseBody
 
 
     @PUT("health-records/{recordId}")

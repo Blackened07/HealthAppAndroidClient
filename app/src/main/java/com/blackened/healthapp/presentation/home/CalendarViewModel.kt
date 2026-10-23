@@ -1,4 +1,4 @@
-package com.blackened.healthapp.presentation
+package com.blackened.healthapp.presentation.home
 
 import android.annotation.SuppressLint
 import androidx.compose.runtime.getValue
@@ -6,17 +6,23 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.blackened.healthapp.data.HealthRecordResponseDTO
-import com.blackened.healthapp.data.NetworkClient
+import com.blackened.healthapp.data.network.HealthRecordResponseDTO
 import com.blackened.healthapp.data.SessionManager
+import com.blackened.healthapp.data.repository.HealthRepositoryImpl
+import com.blackened.healthapp.domain.model.AppNetworkException
+import com.blackened.healthapp.domain.model.ErrorResponseDTO
+import com.blackened.healthapp.domain.usecase.healthrecords.DeleteRecordUseCase
+import com.blackened.healthapp.domain.usecase.healthrecords.GetHistoryUseCase
 import kotlinx.coroutines.launch
-import retrofit2.HttpException
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-class CalendarViewModel : ViewModel() {
+class CalendarViewModel(
+    private val getHistoryUseCase: GetHistoryUseCase = GetHistoryUseCase(HealthRepositoryImpl()),
+    private val deleteRecordUseCase: DeleteRecordUseCase = DeleteRecordUseCase(HealthRepositoryImpl())
+) : ViewModel() {
     private var currentYearMonth by mutableStateOf(YearMonth.now())
 
     var selectedDay by mutableStateOf(LocalDate.now().dayOfMonth)
@@ -31,7 +37,7 @@ class CalendarViewModel : ViewModel() {
     var daysInMonthList by mutableStateOf<List<Int?>>(emptyList())
         private set
 
-    var recordsList by mutableStateOf<List<HealthRecordResponseDTO>>(emptyList())
+    var recordsList: List<HealthRecordResponseDTO> by mutableStateOf(emptyList())
         private set
 
     var isListLoading by mutableStateOf(false)
@@ -41,6 +47,9 @@ class CalendarViewModel : ViewModel() {
         private set
 
     var editingRecordId by mutableStateOf<Long?>(null)
+        private set
+
+    var errorResponse by mutableStateOf<ErrorResponseDTO?>(null)
         private set
 
     init {
@@ -56,18 +65,23 @@ class CalendarViewModel : ViewModel() {
         selectedNoteText = null
     }
 
+    fun clearError() {errorResponse = null}
+
     fun deleteRecord(recordId: Long) {
         isListLoading = true
 
         viewModelScope.launch {
-            try {
-                NetworkClient.healthApi.deleteRecord(recordId)
-                loadRecordsForDay(selectedDay)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                isListLoading = false
-            }
+            deleteRecordUseCase(recordId)
+                .onSuccess {
+                    recordsList = recordsList.filter {it.id != recordId}.toMutableList()
+                }
+                .onFailure { e ->
+                    if (e is AppNetworkException) {
+                        errorResponse = e.errorData
+                    }
+                }
+            loadRecordsForDay(selectedDay)
+            isListLoading = false
         }
     }
 
@@ -126,26 +140,17 @@ class CalendarViewModel : ViewModel() {
         val toTime = "$year-$monthStr-${dayStr}T23:59:59"
 
         viewModelScope.launch {
-            try {
-                val currentTargetId = SessionManager.userId
-                val response = NetworkClient.healthApi.getHistory(
-                    currentTargetId,
-                    null,
-                    fromTime,
-                    toTime
-                )
 
-                recordsList = response
+            getHistoryUseCase(SessionManager.userId, null, fromTime, toTime)
+                .onSuccess { domainList -> recordsList = domainList }
+                .onFailure { e ->
+                    if (e is AppNetworkException) {
+                        errorResponse = e.errorData
+                    }
+                    recordsList = emptyList()
+                }
 
-            } catch (e: HttpException) {
-                recordsList = emptyList()
-                e.printStackTrace()
-            } catch (e: Exception) {
-                recordsList = emptyList()
-                e.printStackTrace()
-            }finally {
                 isListLoading = false
-            }
         }
     }
 }

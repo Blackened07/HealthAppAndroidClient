@@ -1,5 +1,6 @@
-package com.blackened.healthapp.presentation
+package com.blackened.healthapp.presentation.report
 
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -7,15 +8,21 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.blackened.healthapp.data.ExcelReport
-import com.blackened.healthapp.data.HealthRecordResponseDTO
-import com.blackened.healthapp.data.NetworkClient
+import com.blackened.healthapp.data.network.HealthRecordResponseDTO
 import com.blackened.healthapp.data.SessionManager
+import com.blackened.healthapp.data.repository.HealthRepositoryImpl
+import com.blackened.healthapp.domain.model.AppNetworkException
+import com.blackened.healthapp.domain.model.ErrorResponseDTO
+import com.blackened.healthapp.domain.usecase.healthrecords.ReportUseCase
+import com.blackened.healthapp.presentation.MetricType
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.launch
 
-class ReportViewModel : ViewModel() {
+class ReportViewModel(
+    private val reportUseCase: ReportUseCase = ReportUseCase(HealthRepositoryImpl())
+) : ViewModel() {
 
     var selectedType by mutableStateOf(MetricType.BLOOD_PRESSURE)
         private set
@@ -33,6 +40,9 @@ class ReportViewModel : ViewModel() {
         private set
 
     var activeClickedRecord by mutableStateOf<HealthRecordResponseDTO?>(null)
+        private set
+
+    var errorResponse by mutableStateOf<ErrorResponseDTO?>(null)
         private set
 
     fun onTypeChanged(newType: MetricType) {
@@ -55,6 +65,10 @@ class ReportViewModel : ViewModel() {
         activeClickedRecord = null
     }
 
+    fun clearError() {
+        errorResponse = null
+    }
+
     fun loadReport() {
         isLoading = true
 
@@ -71,28 +85,21 @@ class ReportViewModel : ViewModel() {
             .format(DateTimeFormatter.ISO_DATE_TIME)
 
         viewModelScope.launch {
-            try {
-                val currentTargetId = SessionManager.userId
-
-                val response = NetworkClient.healthApi.getHistory(
-                    targetId = currentTargetId,
-                    type = selectedType.serverName,
-                    from = fromIso,
-                    to = toIso
-                )
-
-                reportRecords = response.sortedBy { it.timestamp }
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-                reportRecords = emptyList()
-            } finally {
-                isLoading = false
-            }
+            reportUseCase(SessionManager.userId, selectedType.serverName, fromIso, toIso)
+                .onSuccess { response ->
+                    reportRecords = response.sortedBy { it.timestamp }
+                }
+                .onFailure {  e ->
+                    if (e is AppNetworkException) {
+                        errorResponse = e.errorData
+                    }
+                    reportRecords = emptyList()
+                }
+            isLoading = false
         }
     }
 
-    fun exportAndShareExcel(context: android.content.Context) {
+    fun exportAndShareExcel(context: Context) {
 
         if (reportRecords.isEmpty()) {
             Toast.makeText(
