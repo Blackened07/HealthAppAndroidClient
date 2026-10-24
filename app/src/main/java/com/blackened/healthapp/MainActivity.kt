@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -13,10 +14,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -26,10 +25,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.blackened.healthapp.data.SessionManager
-import com.blackened.healthapp.data.repository.AuthRepositoryImpl
 import com.blackened.healthapp.presentation.family.FamilyScreen
 import com.blackened.healthapp.presentation.home.CalendarScreen
+import com.blackened.healthapp.presentation.login.AuthStateUi
 import com.blackened.healthapp.presentation.login.LoginScreen
+import com.blackened.healthapp.presentation.login.MainViewModel
 import com.blackened.healthapp.presentation.report.ReportScreen
 import com.blackened.healthapp.presentation.verification.VerificationScreen
 
@@ -38,6 +38,8 @@ const val LOGOUT_MSG = "Вы вышли из аккаунта"
 
 class MainActivity : ComponentActivity() {
 
+    private val viewModel: MainViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -45,38 +47,37 @@ class MainActivity : ComponentActivity() {
         SessionManager.init(applicationContext)
 
         setContent {
-            var startScreen by remember {mutableStateOf<String?>(null)}
             val navController = rememberNavController()
+            val authState by viewModel.authState.collectAsState()
 
-            LaunchedEffect(Unit) {
-                if (SessionManager.token.isNullOrBlank()) {
-                    startScreen = "login"
-                } else {
-                   val isTokenAlive = AuthRepositoryImpl().isTokenValid()
+            AppNavigation(navController, "loading")
 
-                    if (isTokenAlive) {
-                        startScreen = "home"
-                    } else {
-                        SessionManager.clearSession()
-                        startScreen = "login"
+            LaunchedEffect(authState) {
+                when (authState) {
+                    is AuthStateUi.Loading -> {}
+
+                    is AuthStateUi.Authenticated -> {
+                        navController.navigate("home") {
+                            popUpTo("loading") { inclusive = true }
+                        }
+                    }
+
+                    is AuthStateUi.NotAuthenticated -> {
+                        navController.navigate("login") {
+                            popUpTo("loading") { inclusive = true }
+                            popUpTo("home") { inclusive = true }
+                        }
                     }
                 }
-            }
-
-            if (startScreen == null) {
-                Box(Modifier.fillMaxSize(), Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            } else {
-                AppNavigation(navController)
             }
         }
     }
 
-    @Composable
-    private fun AppNavigation(navController: NavHostController) {
 
-        val startScreen = if (SessionManager.isUserLoggedIn()) "home" else "login"
+    @Composable
+    private fun AppNavigation(navController: NavHostController, startScreen: String) {
+
+       /* val startScreen = if (SessionManager.isUserLoggedIn()) "home" else "login"*/
 
         Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
             NavHost(
@@ -84,6 +85,11 @@ class MainActivity : ComponentActivity() {
                 startDestination = startScreen,
                 modifier = Modifier.padding(innerPadding)
             ) {
+                composable("loading") {
+                    Box(Modifier.fillMaxSize(), Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
                 composable("login") {
                     LoginScreen(
                         onNavigateToVerification = { email ->
@@ -145,7 +151,7 @@ class MainActivity : ComponentActivity() {
                 composable(route = "family") {
                     FamilyScreen(
                         onNavigateToCalendar = {
-                            navController.navigate("calendar") {
+                            navController.navigate("home") {
                                 popUpTo("family") { inclusive = true }
                             }
                         },

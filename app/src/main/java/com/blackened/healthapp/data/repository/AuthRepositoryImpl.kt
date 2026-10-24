@@ -76,8 +76,9 @@ class AuthRepositoryImpl : AuthRepository {
             NetworkClient.familyApi.isNoFamily()
             true
         } catch (e: HttpException) {
-            val errorBody = e.response()?.errorBody()?.string()
-            e.code() == 403 && !errorBody.isNullOrBlank()
+            val errorBody = ErrorUtil.parseError(e)
+
+            !(e.code() == 401 && errorBody.message.contains("Token expired"))
         } catch (e: Exception) {
             true
         }

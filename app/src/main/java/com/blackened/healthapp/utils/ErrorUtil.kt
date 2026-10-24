@@ -16,9 +16,15 @@ object ErrorUtil {
     }
 
     fun parseError(e: HttpException): ErrorResponseDTO {
-        val errorBody = e.response()?.errorBody()?.string()
         return try {
-            Json.decodeFromString<ErrorResponseDTO>(errorBody ?: "fuck")
+            val errorBody = e.response()?.errorBody()?.string()
+
+            if (!errorBody.isNullOrBlank()) {
+                Json.decodeFromString<ErrorResponseDTO>(errorBody)
+            }
+            else {
+                getDefault(e)
+            }
         } catch (parseE: Exception) {
             getDefault(e)
         }
